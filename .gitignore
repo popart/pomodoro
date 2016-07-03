@@ -1,0 +1,4 @@
+node_modules
+static/bin
+venv
+__pycache__

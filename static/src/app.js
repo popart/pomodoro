@@ -2,49 +2,38 @@
 
 import xs from 'xstream';
 import {run} from '@cycle/xstream-run';
-import {makeDOMDriver, div, h1, button, input} from '@cycle/dom';
+import {makeDOMDriver, h, div, h1, button, input} from '@cycle/dom';
 
-/*
-let toggle = {
-  value: false,
-  toggle: function() {
-    this.value = !this.value;
-    return this.value;
+class TimerProps {
+  constructor(startTime, time, paused) {
+    this.startTime = startTime;
+    this.time = time;
+    this.paused = paused;
   }
 }
 
-function toggle(value) {
-  return !value;
-}
-*/
-let timerProps = {
-  startTime: 25 * 60,
-  time: 25 * 60,
-  paused: false
-}
+let timerPropsInit = new TimerProps(25 * 60, 25 * 60, false);
 
 function updateTimer(timerProps, timerEvent) {
   switch (timerEvent.caseClass) {
     case "SET":
-      timerProps.startTime = timerEvent.time;
-      timerProps.time = timerEvent.time;
-      break;
+      return new TimerProps(timerEvent.time,
+          timerEvent.time, true);
     case "RESET":
-      timerProps.time = timerProps.startTime;
-      break;
+      return new TimerProps(timerProps.startTime,
+          timerProps.startTime, timerProps.paused);
     case "TICK":
-      if (!timerProps.paused) timerProps.time--;
-      break;
+      return new TimerProps(timerProps.startTime,
+          timerProps.paused ?
+            timerProps.time :
+            Math.max(0, timerProps.time - 1),
+          timerProps.paused);
     case "PAUSE":
-      timerProps.paused = timerEvent.paused;
-      break;
-    case "START":
-      timerProps.paused = false;
-      break;
+      return new TimerProps(timerProps.startTime,
+          timerProps.time, !timerProps.paused);
     default:
-      break;
+      return timerProps;
   }
-  return timerProps;
 }
 
 function main(sources) {
@@ -52,7 +41,7 @@ function main(sources) {
   const setTime$ = sources.DOM.select('#startTime').events('input')
     .map (ev => ({
       caseClass: "SET",
-      time: ev.target.value
+      time: ev.target.value * 60
     }));
 
   const reset$ = sources.DOM.select('#reset').events('click')
@@ -62,32 +51,35 @@ function main(sources) {
 
   const pause$ = sources.DOM.select('#pause').events('click')
     .mapTo({
-      caseClass: "PAUSE",
-      paused: true
+      caseClass: "PAUSE"
     });
 
-  const tick$ = xs.periodic(1000)
-    .mapTo( {
-      caseClass: "TICK"
-    });
-
+  const tick$ = xs.merge(reset$, setTime$, pause$).compose( () =>
+      xs.periodic(1000).mapTo( {
+        caseClass: "TICK"
+      })
+  );
 
   // model
   const timer$ = xs.merge(setTime$, reset$, pause$, tick$)
-    // should the DOM be the state?
-    .map( timerEvent => {
-        updateTimer(timerProps, timerEvent);
-        return timerProps;
-    });
+    .fold(updateTimer, timerPropsInit);
 
   // view
-  const vdom$ = timer$.map(timerProps =>
-    div([
-      h1('' + timerProps.time + ' seconds elapsed'),
+  const vdom$ = timer$.map(timerProps => {
+    const minutes = Math.floor(timerProps.time / 60);
+    const seconds = ('00' + (timerProps.time % 60)).slice(-2);
+    return div([
+      h1(minutes + ':' + seconds),
       button('#reset', 'Reset'),
-      input('#startTime', timerProps.startTime) // todo: fix display
+      button('#pause', timerProps.paused ? 'Start' : 'Pause'),
+      input('#startTime', {
+        attrs: {
+          type: 'text',
+          value: Math.floor(timerProps.startTime / 60)
+        }
+      })
     ])
-  );
+  });
 
 
   const sinks = {
