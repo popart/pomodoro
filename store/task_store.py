@@ -14,6 +14,7 @@ class TaskStore:
         search_params = []
         join_clause = ""
         where_clause = ""
+        limit_clause = ""
 
         if 'todo_id' in params:
             search_params.append(params['todo_id'])
@@ -27,9 +28,8 @@ class TaskStore:
 
 
         if 'limit' in params:
+            limit_clause = "LIMIT ?\n"
             search_params.append(params['limit'])
-        else:
-            search_params.append(10)
 
         query = """
             SELECT id, todo_id, task, pomodoros, date_created
@@ -37,7 +37,19 @@ class TaskStore:
             FROM todo_tasks tt
             WHERE 1=1
             %s
-            LIMIT ?
-        """ % join_clause, where_clause
+            %s
+            ORDER BY date_created
+        """ % (join_clause, where_clause, limit_clause)
 
-        return self.__db.fetch(query, search_params)
+        def parse_result(result):
+            id, todo_id, task, pomodoros, date_created = result
+            return {
+                'id': id,
+                'todo_id': todo_id,
+                'task': task,
+                'pomodoros': pomodoros,
+                'date_created': date_created
+            }
+
+        results = self.__db.fetch(query, search_params)
+        return map(parse_result, results)

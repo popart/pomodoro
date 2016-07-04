@@ -18,8 +18,7 @@ class TodoStore:
             search_params.append(params['uuid'])
             where_clause = where_clause + "AND uuid = ?"
 
-        if 'limit' in params:
-            search_params.append(params['limit'])
+        if 'limit' in params: search_params.append(params['limit'])
         else:
             search_params.append(10)
 
@@ -30,4 +29,15 @@ class TodoStore:
             LIMIT ?
         """ % where_clause
 
-        return self.__db.fetch(query, search_params)
+        results = self.__db.fetch(query, search_params)
+
+        def parse_result(result):
+            id, uuid, date_created = result
+            return {
+                'id': id,
+                'uuid': uuid,
+                'date_created': date_created
+            }
+
+        return map(parse_result, results)
+

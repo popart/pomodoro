@@ -8,8 +8,12 @@ export default function Todo(sources) {
   const uuid$ = xs.of(window.location.href)
     .map(uuid => {
       let url = uuid.split('?');
-      return url.length > 1 ? url[1] : '';
+      return url.length > 1 ? url[1] : null;
     })
+
+  const newTaskText$ = sources.DOM.select('#newTaskText').events('keyup')
+    .filter( ev => ev.keyCode == 13 )
+    .map( ev => ev.target.value )
 
   const newTodo$ = sources.DOM.select('#newTodo').events('click')
     .mapTo({
@@ -18,16 +22,15 @@ export default function Todo(sources) {
       category: 'new_todo'
     });
 
-  const newTask$ = xs.combine(uuid$,
-    sources.DOM.select('#newTask').events('click'))
-      .map( ([uuid, click]) => {
+  const newTask$ = xs.combine(uuid$, newTaskText$)
+      .map( ([uuid, newTaskText]) => {
         return ({
           url: `/api/todo/${uuid}/tasks/new`,
           method: 'POST',
           category: 'task',
           send: {
             todo_uuid: uuid,
-            task: 'test task'
+            task: newTaskText
           },
         });
       });
@@ -37,17 +40,35 @@ export default function Todo(sources) {
     .flatten()
     .map( json => '/?' + json.body.resp);
 
+  const newTaskResp$ = sources.HTTP.select('task')
+    .flatten()
+    .map( json => json.body.resp);
+
   // view
-  const actionsDOM$ = xs.of(
-    div([
-      button("#newTodo", "New Todo"),
-      button("#newTask", "New Task")
-    ])
-  );
+  const actionsDOM$ = uuid$.map( uuid => {
+    let els = [button("#newTodo", "New Todo")];
+    if (uuid != null) {
+      els = els.concat([
+        input("#newTaskText", {
+          attr: "New Task..."
+        }),
+        button("#newTask", "New Task")
+      ]);
+    }
+    return div(els);
+  });
+
+  const tasksDOM$ = newTaskResp$
+    .map(tasks => {
+      console.log(tasks);
+    })
 
   const newTodoDOM$ = newTodoResp$.map(url => {
     window.open(url);
   });
+
+  const vDOM$ = xs.combine(actionsDOM$, tasksDOM$)
+    .map(div);
 
   return {
     DOM: actionsDOM$,

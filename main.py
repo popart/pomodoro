@@ -18,17 +18,10 @@ stores = {
 def landing():
     return app.send_static_file('index.html')
 
-@app.route('/test')
-def test():
-    print(app.url_map)
-    return jsonify({'resp': "this is the end!"})
-
 @app.route('/api/todo/<uuid:uuid>')
 def get_todo(uuid):
     todo = stores['todos'].select(uuid=str(uuid), limit=1)
-    id, uuid, date_created = todo[0]
-    resp = { 'id': id, 'uuid': uuid, 'date_created': date_created }
-    return jsonify({'resp': resp })
+    return jsonify({'resp': next(todo) })
 
 @app.route('/api/todo/new')
 def create_todo():
@@ -44,9 +37,13 @@ def get_tasks(uuid):
 @app.route('/api/todo/<uuid>/tasks/new', methods=['POST'])
 def create_task(uuid):
     data = json.loads(request.data.decode('utf-8'))
-    todo = stores['todos'].select(todo_uuid=data['todo_uuid'], limit=1)[0]
+    todo = next(stores['todos'].select(
+        todo_uuid=data['todo_uuid'], limit=1))
+
     stores['tasks'].insert(data['task'], todo['id'])
-    return jsonify({'resp': 'OK'})
+
+    tasks = list(stores['tasks'].select(todo_id=todo['id']));
+    return jsonify({ 'resp': tasks })
 
 @app.route('/<path:path>')
 def static_proxy(path):
