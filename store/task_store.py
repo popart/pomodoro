@@ -22,7 +22,7 @@ class TaskStore:
 
         if 'todo_uuid' in params:
             search_params.append(params['todo_uuid'])
-            join_clause = join_clause + "JOIN todo t ON t.id = tt.todo_id\n"
+            join_clause = join_clause + "JOIN todos t ON t.id = tt.todo_id\n"
 
             where_clause = where_clause + "AND t.uuid = ?\n"
 
@@ -32,13 +32,13 @@ class TaskStore:
             search_params.append(params['limit'])
 
         query = """
-            SELECT id, todo_id, task, pomodoros, date_created
-            %s
+            SELECT tt.id, tt.todo_id, tt.task, tt.pomodoros, tt.date_created
             FROM todo_tasks tt
+            %s
             WHERE 1=1
             %s
             %s
-            ORDER BY date_created
+            ORDER BY tt.date_created
         """ % (join_clause, where_clause, limit_clause)
 
         def parse_result(result):

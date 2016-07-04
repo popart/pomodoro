@@ -1,14 +1,14 @@
 import xs from 'xstream';
-import {div, h1, button, input} from '@cycle/dom';
+import {div, h1, button, input, ul, li} from '@cycle/dom';
 
 const freeze = Object.freeze;
 
 export default function Todo(sources) {
   // intent
   const uuid$ = xs.of(window.location.href)
-    .map(uuid => {
-      let url = uuid.split('?');
-      return url.length > 1 ? url[1] : null;
+    .map(url => {
+      let url_parts = url.split('?');
+      return url_parts.length > 1 ? url_parts[1] : null;
     })
 
   const newTaskText$ = sources.DOM.select('#newTaskText').events('keyup')
@@ -29,11 +29,20 @@ export default function Todo(sources) {
           method: 'POST',
           category: 'task',
           send: {
-            todo_uuid: uuid,
             task: newTaskText
           },
         });
       });
+
+  const getTasks$ = uuid$.map(uuid => {
+    if (uuid != null) {
+      return ({
+        url: `/api/todo/${uuid}/tasks`,
+        method: 'GET',
+        category: 'get_tasks'
+      });
+    } 
+   });
 
   // model
   const newTodoResp$ = sources.HTTP.select('new_todo')
@@ -43,6 +52,11 @@ export default function Todo(sources) {
   const newTaskResp$ = sources.HTTP.select('task')
     .flatten()
     .map( json => json.body.resp);
+
+  const getTasksResp$ = sources.HTTP.select('get_tasks')
+    .flatten()
+    .map( json => json.body.resp)
+    .startWith([]);
 
   // view
   const actionsDOM$ = uuid$.map( uuid => {
@@ -58,10 +72,8 @@ export default function Todo(sources) {
     return div(els);
   });
 
-  const tasksDOM$ = newTaskResp$
-    .map(tasks => {
-      console.log(tasks);
-    })
+  const tasksDOM$ = xs.merge(newTaskResp$, getTasksResp$)
+    .map( tasks => ul(tasks.map(task => li(task.task))) );
 
   const newTodoDOM$ = newTodoResp$.map(url => {
     window.open(url);
@@ -71,8 +83,8 @@ export default function Todo(sources) {
     .map(div);
 
   return {
-    DOM: actionsDOM$,
-    HTTP: xs.merge(newTodo$, newTask$),
+    DOM: vDOM$,
+    HTTP: xs.merge(newTodo$, newTask$, getTasks$),
     POPUP: newTodoDOM$
   }
 }

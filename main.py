@@ -31,14 +31,14 @@ def create_todo():
 
 @app.route('/api/todo/<uuid:uuid>/tasks')
 def get_tasks(uuid):
-    results = stores['tasks'].select(todo_uuid=str(uuid))
-    return jsonify({'resp': results})
+    tasks = list(stores['tasks'].select(todo_uuid=str(uuid)))
+    return jsonify({'resp': tasks})
 
-@app.route('/api/todo/<uuid>/tasks/new', methods=['POST'])
+@app.route('/api/todo/<uuid:uuid>/tasks/new', methods=['POST'])
 def create_task(uuid):
     data = json.loads(request.data.decode('utf-8'))
     todo = next(stores['todos'].select(
-        todo_uuid=data['todo_uuid'], limit=1))
+        uuid=str(uuid), limit=1))
 
     stores['tasks'].insert(data['task'], todo['id'])
 
