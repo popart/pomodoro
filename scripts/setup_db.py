@@ -13,7 +13,7 @@ def create_todos(conn):
 def create_todo_tasks(conn):
     run(conn, '''CREATE TABLE todo_tasks (
         id integer primary key, todo_id integer,
-        task text, pomodoros integer,
+        task text, pomodoros integer DEFAULT 0,
         date_created timestamp DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (todo_id) REFERENCES todos(id)
         )''')

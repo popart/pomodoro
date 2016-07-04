@@ -39,6 +39,7 @@ function updateTimer(timerProps, timerEvent) {
 
 function main(sources) {
   // Intent
+
   const setTime$ = sources.DOM.select('#startTime').events('input')
     .map (ev => ({
       caseClass: "SET",
@@ -65,22 +66,50 @@ function main(sources) {
     .mapTo({
       url: '/test',
       method: 'GET',
-      category: 'todo'
+      category: 'test'
     });
 
-  const url$ = xs.of(window.location.href)
-    .map(url => url.split('?')[1])
+  const newTodo$ = sources.DOM.select('#newTodo').events('click')
+    .mapTo({
+      url: '/api/todo/new',
+      method: 'GET',
+      category: 'new_todo'
+    });
+
+  const uuid$ = xs.of(window.location.href)
+    .map(uuid => {
+      let url = uuid.split('?');
+      return url.length > 1 ? url[1] : '';
+    })
+
+  const post$ = xs.combine(uuid$,
+    sources.DOM.select('#test_post').events('click'))
+      .map( ([uuid, click]) => {
+        return ({
+          url: '/api/todo/test_uuid/tasks/new',
+          method: 'POST',
+          category: 'task',
+          send: {
+            todo_uuid: uuid,
+            task: 'test task'
+          },
+        });
+      });
 
   // model
   const timer$ = xs.merge(setTime$, reset$, pause$, tick$)
     .fold(updateTimer, timerPropsInit);
 
-  const todo$ = sources.HTTP.select('todo')
+  const todo$ = sources.HTTP.select('test')
     .flatten()
     .map( json => {
-      return json.body.resp
+      return json.body.resp;
     })
     .startWith("test");
+
+  const newTodoResp$ = sources.HTTP.select('new_todo')
+    .flatten()
+    .map( json => '/?' + json.body.resp);
 
   // view
   const timerDOM$ = timer$.map(timerProps => {
@@ -102,19 +131,24 @@ function main(sources) {
 
   const todoDOM$ = todo$.map(todo => {
     return div([
-      h1(todo)
+      h1(todo),
+      button("#test_post", "POST"),
+      button("#newTodo", "New Todo")
     ]);
   });
 
-  const vDOM$ = xs.combine(timerDOM$, todoDOM$, url$)
-    .map( ([timerDom, todoDom, url]) =>
-        div([timerDom, todoDom, h1(url)]) );
+  const newTodoDOM$ = newTodoResp$.map(url => {
+    window.open(url);
+  });
+
+  const vDOM$ = xs.combine(timerDOM$, todoDOM$, uuid$)
+    .map( ([timerDom, todoDom, uuid]) =>
+        div([timerDom, todoDom, h1(uuid)]) );
 
   const sinks = {
     DOM: vDOM$,
-    //DOM: timerDOM$,
-    //JSONP: request$
-    HTTP: request$
+    HTTP: xs.merge(request$, post$, newTodo$),
+    POPUP: newTodoDOM$
   };
 
   return sinks;
@@ -122,8 +156,8 @@ function main(sources) {
 
 const drivers = {
   DOM: makeDOMDriver('#app'),
-  //JSONP: makeJSONPDriver()
-  HTTP: makeHTTPDriver()
+  HTTP: makeHTTPDriver(),
+  POPUP: makeHTTPDriver()
 };
 
 run(main, drivers);
