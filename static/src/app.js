@@ -3,6 +3,7 @@
 import xs from 'xstream';
 import {run} from '@cycle/xstream-run';
 import {makeDOMDriver, h, div, h1, button, input} from '@cycle/dom';
+import {makeHTTPDriver} from '@cycle/http';
 
 class TimerProps {
   constructor(startTime, time, paused) {
@@ -60,12 +61,26 @@ function main(sources) {
       })
   );
 
+  const request$ = sources.DOM.select('#test').events('click')
+    .mapTo({
+      url: '/test',
+      method: 'GET',
+      category: 'todo'
+    });
+
   // model
   const timer$ = xs.merge(setTime$, reset$, pause$, tick$)
     .fold(updateTimer, timerPropsInit);
 
+  const todo$ = sources.HTTP.select('todo')
+    .flatten()
+    .map( json => {
+      return json.body.resp
+    })
+    .startWith("test");
+
   // view
-  const vdom$ = timer$.map(timerProps => {
+  const timerDOM$ = timer$.map(timerProps => {
     const minutes = Math.floor(timerProps.time / 60);
     const seconds = ('00' + (timerProps.time % 60)).slice(-2);
     return div([
@@ -77,20 +92,35 @@ function main(sources) {
           type: 'text',
           value: Math.floor(timerProps.startTime / 60)
         }
-      })
+      }),
+      button("#test", "JSON")
     ])
   });
 
+  const todoDOM$ = todo$.map(todo => {
+    return div([
+      h1(todo)
+    ]);
+  });
+
+  const vDOM$ = xs.combine(timerDOM$, todoDOM$)
+    .map( ([timerDom, todoDom]) =>
+        div([timerDom, todoDom]) );
 
   const sinks = {
-    DOM: vdom$
+    DOM: vDOM$,
+    //DOM: timerDOM$,
+    //JSONP: request$
+    HTTP: request$
   };
 
   return sinks;
 }
 
 const drivers = {
-  DOM: makeDOMDriver('#app')
+  DOM: makeDOMDriver('#app'),
+  //JSONP: makeJSONPDriver()
+  HTTP: makeHTTPDriver()
 };
 
 run(main, drivers);
