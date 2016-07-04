@@ -68,6 +68,9 @@ function main(sources) {
       category: 'todo'
     });
 
+  const url$ = xs.of(window.location.href)
+    .map(url => url.split('?')[1])
+
   // model
   const timer$ = xs.merge(setTime$, reset$, pause$, tick$)
     .fold(updateTimer, timerPropsInit);
@@ -103,9 +106,9 @@ function main(sources) {
     ]);
   });
 
-  const vDOM$ = xs.combine(timerDOM$, todoDOM$)
-    .map( ([timerDom, todoDom]) =>
-        div([timerDom, todoDom]) );
+  const vDOM$ = xs.combine(timerDOM$, todoDOM$, url$)
+    .map( ([timerDom, todoDom, url]) =>
+        div([timerDom, todoDom, h1(url)]) );
 
   const sinks = {
     DOM: vDOM$,
