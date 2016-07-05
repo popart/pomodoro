@@ -44,6 +44,7 @@ export default function Todo(sources) {
     }
   });
 
+  // #fixme: should also be able to deselect task
   const selectTask$ = sources.DOM.select('li.task').events('click')
     .map( ev => ev.currentTarget.querySelectorAll('input.task_id')[0].value )
     .startWith(-1);

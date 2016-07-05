@@ -6,7 +6,7 @@ from store.todo_store import TodoStore
 from store.task_store import TaskStore
 
 app = Flask(__name__)
-db = SQLite3Conn('db/test.db')
+db = SQLite3Conn('db/pomodoro.db')
 
 stores = {
     'todos': TodoStore(db),

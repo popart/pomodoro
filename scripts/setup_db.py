@@ -20,7 +20,7 @@ def create_todo_tasks(conn):
         )''')
 
 if __name__ == "__main__":
-    conn = sqlite3.connect('db/test.db')
+    conn = sqlite3.connect('db/pomodoro.db')
     create_todos(conn)
     create_todo_tasks(conn)
     conn.close()

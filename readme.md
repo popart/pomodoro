@@ -1,11 +1,12 @@
-npm install webpack -g
-babel install -g babel-cli
+requirements:
+  sqlite3, python3, virtualenv
 
-npm install babel-preset-es2015 babel-preset-react
-npm install --save react react-dom babel-preset-react babel-loader babel-core
+setup:
+  npm install
+  webpack
 
-
-babel --presets es2015,react --watch src/ --out-dir lib/
-
-export FLASK_APP=main.py
-flask run
+  virtualenv -p python3 venv
+  source venv/bin/activate
+  python scripts/setup_db.py
+  pip install flask
+  ./runserver
