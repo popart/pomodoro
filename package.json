@@ -18,7 +18,6 @@
   "dependencies": {
     "@cycle/dom": "^10.0.5",
     "@cycle/http": "^9.0.2",
-    "@cycle/jsonp": "^6.0.0",
     "@cycle/xstream-run": "^3.0.3",
     "xstream": "^5.1.0"
   }

@@ -42,7 +42,12 @@ export default function Todo(sources) {
         category: 'get_tasks'
       });
     }
-   });
+  });
+
+  const selectTask$ = sources.DOM.select('.task').events('click')
+    .map( ev => ev.target.querySelectorAll('input')[0].value)
+    .startWith(-1);
+
 
   // model
   const newTodoResp$ = sources.HTTP.select('new_todo')
@@ -57,6 +62,8 @@ export default function Todo(sources) {
     .flatten()
     .map( json => json.body.resp)
     .startWith([]);
+
+  const taskList$ = xs.merge(newTaskResp$, getTasksResp$);
 
   // view
   const actionsDOM$ = uuid$.map( uuid => {
@@ -73,8 +80,16 @@ export default function Todo(sources) {
     return div(els);
   });
 
-  const tasksDOM$ = xs.merge(newTaskResp$, getTasksResp$)
-    .map( tasks => ul(tasks.map(task => li(task.text))) );
+  const tasksDOM$ = xs.combine(taskList$, selectTask$)
+    .map( ([taskList, selectTask]) =>
+      ul( taskList.map(task =>
+        li('.task' + (task.id == selectTask ? '.selected' : ''),
+           [ task.text, input({ attrs: {
+               value:task.id, type: 'hidden'
+             } }) ]
+          )
+      )
+    ));
 
   const newTodoDOM$ = newTodoResp$.map(url => {
     window.open(url);
@@ -86,6 +101,7 @@ export default function Todo(sources) {
   return {
     DOM: vDOM$,
     HTTP: xs.merge(newTodo$, newTask$, getTasks$),
-    POPUP: newTodoDOM$
+    POPUP: newTodoDOM$,
+    selectTask: selectTask$
   }
 }
