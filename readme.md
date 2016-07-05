@@ -1,7 +1,13 @@
-requirements:
-  sqlite3, python3, virtualenv
+# Pomodoro
+An application to create todo lists and run a pomodoro timer. Uses [flask](http://flask.pocoo.org/), [cycle.js](http://cycle.js.org/), and [xstream](https://github.com/staltz/xstream). Written in Python & ES6.
 
-setup:
+## Requirements
+  * sqlite3
+  * python3
+  * virtualenv
+  
+## Setup Instuctions
+  ```bash
   npm install
   webpack
 
@@ -10,3 +16,4 @@ setup:
   python scripts/setup_db.py
   pip install flask
   ./runserver
+  ```
