@@ -14,6 +14,10 @@ class TodoStore:
         search_params = []
         where_clause = ""
 
+        if 'id' in params:
+            search_params.append(params['id'])
+            where_clause = where_clause + "AND id = ?"
+
         if 'uuid' in params:
             search_params.append(params['uuid'])
             where_clause = where_clause + "AND uuid = ?"
