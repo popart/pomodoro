@@ -29,7 +29,7 @@ export default function Todo(sources) {
           method: 'POST',
           category: 'task',
           send: {
-            task: newTaskText
+            text: newTaskText
           },
         });
       });
@@ -41,7 +41,7 @@ export default function Todo(sources) {
         method: 'GET',
         category: 'get_tasks'
       });
-    } 
+    }
    });
 
   // model
@@ -64,16 +64,17 @@ export default function Todo(sources) {
     if (uuid != null) {
       els = els.concat([
         input("#newTaskText", {
-          attr: "New Task..."
-        }),
-        button("#newTask", "New Task")
+          attrs: {
+            value: "New Task..."
+          }
+        })
       ]);
     }
     return div(els);
   });
 
   const tasksDOM$ = xs.merge(newTaskResp$, getTasksResp$)
-    .map( tasks => ul(tasks.map(task => li(task.task))) );
+    .map( tasks => ul(tasks.map(task => li(task.text))) );
 
   const newTodoDOM$ = newTodoResp$.map(url => {
     window.open(url);

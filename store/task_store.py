@@ -3,12 +3,12 @@ class TaskStore:
     def __init__(self, db):
         self.__db = db
 
-    def insert(self, task, todo_id):
+    def insert(self, text, todo_id):
         query = """
-            INSERT INTO todo_tasks (task, todo_id)
+            INSERT INTO todo_tasks (text, todo_id)
             VALUES (?, ?)
         """
-        self.__db.run(query, [task, todo_id])
+        self.__db.run(query, [text, todo_id])
 
     def select(self, **params):
         search_params = []
@@ -32,7 +32,7 @@ class TaskStore:
             search_params.append(params['limit'])
 
         query = """
-            SELECT tt.id, tt.todo_id, tt.task, tt.pomodoros, tt.date_created
+            SELECT tt.id, tt.todo_id, tt.text, tt.pomodoros, tt.date_created
             FROM todo_tasks tt
             %s
             WHERE 1=1
@@ -42,11 +42,11 @@ class TaskStore:
         """ % (join_clause, where_clause, limit_clause)
 
         def parse_result(result):
-            id, todo_id, task, pomodoros, date_created = result
+            id, todo_id, text, pomodoros, date_created = result
             return {
                 'id': id,
                 'todo_id': todo_id,
-                'task': task,
+                'text': text,
                 'pomodoros': pomodoros,
                 'date_created': date_created
             }

@@ -81,6 +81,7 @@ export default function Timer(sources) {
   });
 
   return {
-    DOM: timerDOM$
+    DOM: timerDOM$,
+    timerProps: timer$
   }
 }

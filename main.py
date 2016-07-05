@@ -40,7 +40,7 @@ def create_task(uuid):
     todo = next(stores['todos'].select(
         uuid=str(uuid), limit=1))
 
-    stores['tasks'].insert(data['task'], todo['id'])
+    stores['tasks'].insert(data['text'], todo['id'])
 
     tasks = list(stores['tasks'].select(todo_id=todo['id']));
     return jsonify({ 'resp': tasks })
