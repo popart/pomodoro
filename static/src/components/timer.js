@@ -25,7 +25,7 @@ function updateTimer(timerProps, timerEvent) {
       return freeze(new TimerProps(timerProps.startTime,
           timerProps.paused ?
             timerProps.time :
-            Math.max(0, timerProps.time - 1),
+            Math.max(-1, timerProps.time - 1),
           timerProps.paused));
     case "PAUSE":
       return freeze(new TimerProps(timerProps.startTime,
@@ -40,7 +40,7 @@ export default function Timer(sources) {
   const setTime$ = sources.DOM.select('#startTime').events('input')
     .map (ev => ({
       caseClass: "SET",
-      time: ev.target.value * 60
+      time: Math.floor(ev.target.value * 60)
     }));
 
   const reset$ = sources.DOM.select('#reset').events('click')
@@ -53,11 +53,14 @@ export default function Timer(sources) {
       caseClass: "PAUSE"
     });
 
-  const tick$ = xs.merge(reset$, setTime$, pause$).compose( () =>
-      xs.periodic(1000).mapTo( {
-        caseClass: "TICK"
+  const tick$ = xs.merge(reset$, setTime$, pause$).startWith(1)
+    .map( () =>
+      xs.periodic(1000)
+      .mapTo( {
+          caseClass: "TICK"
       })
-  );
+    )
+    .flatten();
 
   // model
   const timer$ = xs.merge(setTime$, reset$, pause$, tick$)
@@ -65,10 +68,11 @@ export default function Timer(sources) {
 
   // view
   const timerDOM$ = timer$.map(timerProps => {
-    const minutes = Math.floor(timerProps.time / 60);
-    const seconds = ('00' + (timerProps.time % 60)).slice(-2);
+    const time = Math.max(timerProps.time, 0)
+    const minutes = Math.floor(time / 60);
+    const seconds = ('00' + (time % 60)).slice(-2);
     return div([
-      h1(minutes + ':' + seconds),
+      h1('#time', minutes + ':' + seconds),
       button('#reset', 'Reset'),
       button('#pause', timerProps.paused ? 'Start' : 'Pause'),
       input('#startTime', {

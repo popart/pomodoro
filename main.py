@@ -56,6 +56,17 @@ def update_task(uuid, task_id):
     tasks = list(stores['tasks'].select(todo_id=todo['id']));
     return jsonify({ 'resp': tasks })
 
+@app.route('/api/tasks/<task_id>/addPomodoro')
+def add_pomodoro(task_id):
+    task = next(stores['tasks'].select(id=task_id))
+    todo = next(stores['todos'].select(
+        id=task['todo_id'], limit=1))
+
+    stores['tasks'].update(task_id=task_id, add_pomodoros=1)
+
+    tasks = list(stores['tasks'].select(todo_id=todo['id']));
+    return jsonify({ 'resp': tasks })
+
 @app.route('/<path:path>')
 def static_proxy(path):
     return app.send_static_file(path)

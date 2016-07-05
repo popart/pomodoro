@@ -23,9 +23,11 @@ class TaskStore:
         if 'todo_uuid' in params:
             search_params.append(params['todo_uuid'])
             join_clause = join_clause + "JOIN todos t ON t.id = tt.todo_id\n"
-
             where_clause = where_clause + "AND t.uuid = ?\n"
 
+        if 'id' in params:
+            search_params.append(params['id'])
+            where_clause = where_clause + "AND tt.id = ?\n"
 
         if 'limit' in params:
             limit_clause = "LIMIT ?\n"
@@ -63,6 +65,9 @@ class TaskStore:
         if 'completed' in params:
             update_clause = update_clause + "completed = ?\n"
             search_params.append(str(params['completed']).lower())
+        if 'add_pomodoros' in params:
+            update_clause = update_clause + "pomodoros = pomodoros + ?\n"
+            search_params.append(params['add_pomodoros'])
 
         search_params.append(params['task_id'])
 

@@ -70,6 +70,8 @@ export default function Todo(sources) {
       .map( ([uuid, ev]) => {
         let taskId = ev.currentTarget.parentNode
           .querySelectorAll('input.task_id')[0].value;
+        // instead of saving data in DOM, could use a toggle GET req
+        // can't use taskList$, b/c it updates w/ this response
         let taskCompleted = JSON.parse(ev.currentTarget
           .querySelectorAll('input.task_completed')[0].value);
         return ({

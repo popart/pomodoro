@@ -13,13 +13,32 @@ function main(sources) {
   const timer = Timer(sources);
   const todo = Todo(sources);
 
+  // model
+  const timerFinish$ = timer.timerProps.filter(tp => tp.time == 0);
+
+  let selectedTask = -1; //note: this is stateful...
+  const selectTask$ = todo.selectTask.map(id => selectedTask = id);
+
+  // note: this end point ignoring the /todo/<uuid>/tasks convention...
+  // don't feel like pulling the uuid$ out from Todo right now
+  const addPomodoro$ = timerFinish$
+    .map( () => {
+      if (selectedTask > 0) {
+        return ({
+          url: `api/tasks/${selectedTask}/addPomodoro`,
+          method: 'GET',
+          category: 'tasks'
+        })
+      }
+    })
+
   // view
-  const vDOM$ = xs.combine(timer.DOM, todo.DOM)
-    .map( ([timerDom, todoDom]) => div([timerDom, todoDom]) );
+  const vDOM$ = xs.combine(timer.DOM, todo.DOM, selectTask$)
+    .map( ([timerDom, todoDom, _]) => div([timerDom, todoDom]) );
 
   return {
     DOM: vDOM$,
-    HTTP: todo.HTTP,
+    HTTP: xs.merge(todo.HTTP, addPomodoro$),
     POPUP: todo.POPUP
   };
 }
@@ -27,7 +46,7 @@ function main(sources) {
 const drivers = {
   DOM: makeDOMDriver('#app'),
   HTTP: makeHTTPDriver(),
-  POPUP: makeHTTPDriver()
+  POPUP: makeHTTPDriver(),
 };
 
 run(main, drivers);
