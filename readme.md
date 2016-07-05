@@ -4,7 +4,7 @@ An application to create todo lists and run a pomodoro timer. Uses [flask](http:
 ## Requirements
   * sqlite3
   * python3
-  * virtualenv
+  * python-virtualenv
   
 ## Setup Instuctions
   ```bash
