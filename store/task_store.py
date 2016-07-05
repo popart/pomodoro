@@ -32,7 +32,8 @@ class TaskStore:
             search_params.append(params['limit'])
 
         query = """
-            SELECT tt.id, tt.todo_id, tt.text, tt.pomodoros, tt.date_created
+            SELECT tt.id, tt.todo_id, tt.text, tt.pomodoros, tt.completed,
+                   tt.date_created
             FROM todo_tasks tt
             %s
             WHERE 1=1
@@ -42,14 +43,35 @@ class TaskStore:
         """ % (join_clause, where_clause, limit_clause)
 
         def parse_result(result):
-            id, todo_id, text, pomodoros, date_created = result
+            id, todo_id, text, pomodoros, completed, date_created = result
             return {
                 'id': id,
                 'todo_id': todo_id,
                 'text': text,
                 'pomodoros': pomodoros,
+                'completed': True if completed == 'true' else False,
                 'date_created': date_created
             }
 
         results = self.__db.fetch(query, search_params)
         return map(parse_result, results)
+
+    def update(self, **params):
+        update_clause = ""
+        search_params = []
+
+        if 'completed' in params:
+            update_clause = update_clause + "completed = ?\n"
+            search_params.append(str(params['completed']).lower())
+
+        search_params.append(params['task_id'])
+
+        query = """
+            UPDATE todo_tasks SET
+            %s
+            WHERE
+            ID = ?
+            """ % update_clause
+
+        self.__db.run(query, search_params)
+

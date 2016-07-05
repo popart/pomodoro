@@ -1,5 +1,5 @@
 import xs from 'xstream';
-import {div, h1, button, input, ul, li} from '@cycle/dom';
+import {div, h1, button, input, ul, li, span} from '@cycle/dom';
 
 const freeze = Object.freeze;
 
@@ -27,7 +27,7 @@ export default function Todo(sources) {
         return ({
           url: `/api/todo/${uuid}/tasks/new`,
           method: 'POST',
-          category: 'task',
+          category: 'tasks',
           send: {
             text: newTaskText
           },
@@ -44,17 +44,16 @@ export default function Todo(sources) {
     }
   });
 
-  const selectTask$ = sources.DOM.select('.task').events('click')
-    .map( ev => ev.target.querySelectorAll('input')[0].value)
+  const selectTask$ = sources.DOM.select('li.task').events('click')
+    .map( ev => ev.currentTarget.querySelectorAll('input.task_id')[0].value )
     .startWith(-1);
-
 
   // model
   const newTodoResp$ = sources.HTTP.select('new_todo')
     .flatten()
     .map( json => '/?' + json.body.resp);
 
-  const newTaskResp$ = sources.HTTP.select('task')
+  const tasksResp$ = sources.HTTP.select('tasks')
     .flatten()
     .map( json => json.body.resp);
 
@@ -63,7 +62,25 @@ export default function Todo(sources) {
     .map( json => json.body.resp)
     .startWith([]);
 
-  const taskList$ = xs.merge(newTaskResp$, getTasksResp$);
+  const taskList$ = xs.merge(tasksResp$, getTasksResp$);
+
+  const completeTask$ = xs.combine(
+    uuid$,
+    sources.DOM.select('.taskCheck').events('click'))
+      .map( ([uuid, ev]) => {
+        let taskId = ev.currentTarget.parentNode
+          .querySelectorAll('input.task_id')[0].value;
+        let taskCompleted = JSON.parse(ev.currentTarget
+          .querySelectorAll('input.task_completed')[0].value);
+        return ({
+          url: `/api/todo/${uuid}/tasks/${taskId}/update`,
+          method: 'POST',
+          category: 'tasks',
+          send: {
+            completed: !taskCompleted
+          }
+        })
+      })
 
   // view
   const actionsDOM$ = uuid$.map( uuid => {
@@ -84,10 +101,18 @@ export default function Todo(sources) {
     .map( ([taskList, selectTask]) =>
       ul( taskList.map(task =>
         li('.task' + (task.id == selectTask ? '.selected' : ''),
-           [ task.text, input({ attrs: {
-               value:task.id, type: 'hidden'
-             } }) ]
-          )
+           [ span(task.text + ' | ' + task.pomodoros + ' pomodoros'),
+             span('.taskCheck', [
+               ' | ' + (task.completed ? '[x]' : '[ ]'),
+               input('.task_completed', { attrs: {
+                 value: task.completed, type: 'hidden'
+               } })
+             ]),
+             input('.task_id', { attrs: {
+               value: task.id, type: 'hidden'
+             } })
+           ]
+        )
       )
     ));
 
@@ -100,7 +125,7 @@ export default function Todo(sources) {
 
   return {
     DOM: vDOM$,
-    HTTP: xs.merge(newTodo$, newTask$, getTasks$),
+    HTTP: xs.merge(newTodo$, newTask$, getTasks$, completeTask$),
     POPUP: newTodoDOM$,
     selectTask: selectTask$
   }

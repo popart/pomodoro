@@ -45,6 +45,17 @@ def create_task(uuid):
     tasks = list(stores['tasks'].select(todo_id=todo['id']));
     return jsonify({ 'resp': tasks })
 
+@app.route('/api/todo/<uuid:uuid>/tasks/<task_id>/update', methods=['POST'])
+def update_task(uuid, task_id):
+    data = json.loads(request.data.decode('utf-8'))
+    todo = next(stores['todos'].select(
+        uuid=str(uuid), limit=1))
+
+    stores['tasks'].update(task_id=task_id, **data)
+
+    tasks = list(stores['tasks'].select(todo_id=todo['id']));
+    return jsonify({ 'resp': tasks })
+
 @app.route('/<path:path>')
 def static_proxy(path):
     return app.send_static_file(path)
